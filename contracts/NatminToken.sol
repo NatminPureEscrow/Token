@@ -56,52 +56,18 @@ contract Ownable {
 }
 
 // Natmin vesting contract for team members
-contract NatminVesting is Ownable{
-    using SafeMath for uint256;
-
+contract NatminVesting is Ownable {
     struct Vesting {        
         uint256 amount;
         uint256 endTime;
     }
-
     mapping(address => Vesting) internal vestings;
 
-    constructor() public {
-
-    }
-
-    // Create a vesting entry for the specified user
-    function addVesting(address _user, uint256 _amount) internal ownerOnly {
-        vestings[_user].amount = _amount;
-        vestings[_user].endTime = now + 180 days;
-    }
-
-    // Returns the vested amount for a specified user
-    function getVestedAmount(address _user) internal view returns (uint256 _amount) {
-        _amount = vestings[_user].amount;
-        return _amount;
-    }
-
-    // Returns the vested end time for a specified user
-    function getVestingEndTime(address _user) internal view returns (uint256 _endTime) {
-        _endTime = vestings[_user].endTime;
-        return _endTime;
-    }
-
-    // Checks if the venting period is over for a specified user
-    function vestingEnded(address _user) internal view returns (bool) {
-        if(vestings[_user].endTime <= now) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    // Manual end vested time 
-    function endVesting(address _user) internal ownerOnly {
-        vestings[_user].endTime = now;
-    }
+    function addVesting(address _user, uint256 _amount) public ;
+    function getVestedAmount(address _user) public view returns (uint256 _amount);
+    function getVestingEndTime(address _user) public view returns (uint256 _endTime);
+    function vestingEnded(address _user) public view returns (bool) ;
+    function endVesting(address _user) public ;
 }
 
 //ERC20 Standard interface specification
@@ -134,20 +100,8 @@ contract BurnToken is Ownable {
     using SafeMath for uint256;
     
     function burn(uint256 _value) public;
-    function _burn(address _who, uint256 _value) internal;
+    function _burn(address _user, uint256 _value) internal;
     event Burn(address indexed _user, uint256 _value);
-}
-
-contract NatminBurnContract is Ownable {
-    string _name = "Natmin Burn Contract";
-    // Natmin Burn contract
-    // Funds cannot be transferred from this contract
-    // When Destroy is called the funds are transferred to itself and destroyed
-
-    function Destroy() public ownerOnly {
-        selfdestruct(address(this));
-    }
-
 }
 
 //NatminToken implements the ERC20, ERC223 standard methods
@@ -159,16 +113,14 @@ contract NatminToken is ERC20Standard, ERC223Standard, Ownable, NatminVesting, B
     string _standard = "ERC20 / ERC223";
     uint256 _decimals = 18; // same value as wei
     uint256 _totalSupply;
-    address _burnAddress;
 
     mapping(address => uint256) balances;
     mapping(address => mapping(address => uint256)) allowed;
 
-    constructor(uint256 _supply, address _burnAddr) public {
+    constructor(uint256 _supply) public {
         require(_supply != 0);
         _totalSupply = _supply * (10 ** 18);
         balances[contractOwner] = _totalSupply;
-        _burnAddress = _burnAddr;
     }
 
     // Returns the _name of the token
@@ -308,12 +260,46 @@ contract NatminToken is ERC20Standard, ERC223Standard, Ownable, NatminVesting, B
     function _burn(address _user, uint256 _value) internal ownerOnly {
         require(balances[_user] >= _value);
 
-        transfer(_burnAddress, _value);
+        balances[_user] = balances[_user].sub(_value);
+        _totalSupply = _totalSupply.sub(_value);
         
         emit Burn(_user, _value);
-        emit Transfer(_user, _burnAddress, _value);
+        emit Transfer(_user, address(0), _value);
 
         bytes memory _empty;
-        emit Transfer(_user, _burnAddress, _value, _empty);
+        emit Transfer(_user, address(0), _value, _empty);
+    }
+
+    // Create a vesting entry for the specified user
+    function addVesting(address _user, uint256 _amount) public ownerOnly {
+        vestings[_user].amount = _amount;
+        vestings[_user].endTime = now + 180 days;
+    }
+
+    // Returns the vested amount for a specified user
+    function getVestedAmount(address _user) public view returns (uint256 _amount) {
+        _amount = vestings[_user].amount;
+        return _amount;
+    }
+
+    // Returns the vested end time for a specified user
+    function getVestingEndTime(address _user) public view returns (uint256 _endTime) {
+        _endTime = vestings[_user].endTime;
+        return _endTime;
+    }
+
+    // Checks if the venting period is over for a specified user
+    function vestingEnded(address _user) public view returns (bool) {
+        if(vestings[_user].endTime <= now) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    // Manual end vested time 
+    function endVesting(address _user) public ownerOnly {
+        vestings[_user].endTime = now;
     }
 }
