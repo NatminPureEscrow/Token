@@ -89,11 +89,7 @@ contract ERC223Standard {
 
 //ERC223 function to handle incoming token transfers
 contract ERC223ReceivingContract { 
-    function tokenFallback(address _from, uint256 _value, bytes _data) public pure {
-        _from;
-        _value;
-        _data;
-    }
+    function tokenFallback(address _from, uint256 _value, bytes _data) public {}
 }
 
 contract BurnToken is Ownable {
