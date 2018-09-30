@@ -190,10 +190,8 @@ contract NatminToken is ERC20Standard, ERC223Standard, Ownable, NatminVesting, B
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
 
-        if(msg.sender != contractOwner){
-            ERC223ReceivingContract _tokenReceiver = ERC223ReceivingContract(_to);
-            _tokenReceiver.tokenFallback(msg.sender, _value, _data);
-        }
+        ERC223ReceivingContract _tokenReceiver = ERC223ReceivingContract(_to);
+        _tokenReceiver.tokenFallback(msg.sender, _value, _data);
 
         emit Transfer(msg.sender, _to, _value);
         emit Transfer(msg.sender, _to, _value, _data);
@@ -215,6 +213,7 @@ contract NatminToken is ERC20Standard, ERC223Standard, Ownable, NatminVesting, B
 
     // ERC20 standard function
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool success){
+        require(_to != 0x0);
         require(_value <= allowed[_from][msg.sender]);
         require(_value <= balances[_from]);
         require(validateTransferAmount(_from,_value));
